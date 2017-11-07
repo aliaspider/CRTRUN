@@ -46,11 +46,11 @@ int main(int argc, char **argv)
    printf("test\n");
 
 
-//   Handle tempAM = 0;
-//   DEBUG_ERROR(srvGetServiceHandle(&tempAM, "am:net"));
-//   svcCloseHandle(tempAM);
+   Handle tempAM = 0;
+   DEBUG_ERROR(srvGetServiceHandle(&tempAM, "am:net"));
+   svcCloseHandle(tempAM);
 
-//   amInit();
+   amInit();
 //   cfguInit();
 //   acInit();
 //   ptmuInit();
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 
    wait_for_input();
 
-//   amExit();
+   amExit();
 //   cfguExit();
 //   acExit();
 //   ptmuExit();

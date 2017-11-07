@@ -139,9 +139,7 @@ void remoteinstall_receive_urls_network(void) {
            }
 
            printf("urls : %s\n",urls);
-           DEBUG_LINE();
            action_install_url(urls);
-           DEBUG_LINE();
 
            remoteinstall_network_close_client(data);
            free(urls);

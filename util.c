@@ -598,11 +598,9 @@ Result util_http_open(httpcContext *context, u32 *responseCode, const char *url,
 Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const char *url, bool userAgent, u32 rangeStart,
                              u32 rangeEnd)
 {
-   DEBUG_LINE();
 
    if (context == NULL || url == NULL)
       return R_FBI_INVALID_ARGUMENT;
-   DEBUG_LINE();
 
    char currUrl[1024];
    strncpy(currUrl, url, sizeof(currUrl));
@@ -622,10 +620,8 @@ Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const cha
 
    while (R_SUCCEEDED(res) && !resolved && redirectCount < 32)
    {
-      DEBUG_LINE();
       if (R_SUCCEEDED(res = httpcOpenContext(context, HTTPC_METHOD_GET, currUrl, 1)))
       {
-         DEBUG_LINE();
          u32 response = 0;
 
          if (R_SUCCEEDED(res = httpcSetSSLOpt(context, SSLCOPT_DisableVerify))
@@ -635,7 +631,6 @@ Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const cha
                && R_SUCCEEDED(res = httpcBeginRequest(context))
                && R_SUCCEEDED(res = httpcGetResponseStatusCodeTimeout(context, &response, HTTP_TIMEOUT)))
          {
-            DEBUG_LINE();
             if (response == 301 || response == 302 || response == 303)
             {
                redirectCount++;
@@ -661,11 +656,9 @@ Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const cha
             httpcCloseContext(context);
       }
    }
-   DEBUG_LINE();
 
    if (R_SUCCEEDED(res) && redirectCount >= 32)
       res = R_FBI_TOO_MANY_REDIRECTS;
-   DEBUG_LINE();
 
    return res;
 }

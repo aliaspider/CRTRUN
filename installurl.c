@@ -29,7 +29,6 @@ typedef struct
 
 static void action_install_url_free_data(install_url_data *data)
 {
-   DEBUG_LINE();
    if (data->finished != NULL)
       data->finished(data->userData);
 
@@ -38,7 +37,6 @@ static void action_install_url_free_data(install_url_data *data)
 
 static Result action_install_url_open_src(void *data, u32 index, u32 *handle)
 {
-   DEBUG_LINE();
    install_url_data *installData = (install_url_data *) data;
 
    Result res = 0;
@@ -48,8 +46,6 @@ static Result action_install_url_open_src(void *data, u32 index, u32 *handle)
    DEBUG_STR(installData->urls[index]);
    if (R_SUCCEEDED(res = util_http_open(context, &installData->responseCode, installData->urls[index], true)))
    {
-      DEBUG_LINE();
-
       *handle = (u32) context;
 
       installData->currContext = context;
@@ -62,7 +58,6 @@ static Result action_install_url_open_src(void *data, u32 index, u32 *handle)
 
 static Result action_install_url_close_src(void *data, u32 index, bool succeeded, u32 handle)
 {
-   DEBUG_LINE();
    ((install_url_data *) data)->currContext = NULL;
 
    return util_http_close((httpcContext *) handle);
@@ -70,7 +65,6 @@ static Result action_install_url_close_src(void *data, u32 index, bool succeeded
 
 static Result action_install_url_get_src_size(void *data, u32 handle, u64 *size)
 {
-   DEBUG_LINE();
    u32 downloadSize = 0;
    Result res = util_http_get_size((httpcContext *) handle, &downloadSize);
 
@@ -80,13 +74,11 @@ static Result action_install_url_get_src_size(void *data, u32 handle, u64 *size)
 
 static Result action_install_url_read_src(void *data, u32 handle, u32 *bytesRead, void *buffer, u64 offset, u32 size)
 {
-   DEBUG_LINE();
    return util_http_read((httpcContext *) handle, bytesRead, buffer, size);
 }
 
 static Result action_install_url_open_dst(void *data, u32 index, void *initialReadBlock, u64 size, u32 *handle)
 {
-   DEBUG_LINE();
    install_url_data *installData = (install_url_data *) data;
 
    Result res = 0;
@@ -133,7 +125,6 @@ static Result action_install_url_open_dst(void *data, u32 index, void *initialRe
 
 static Result action_install_url_close_dst(void *data, u32 index, bool succeeded, u32 handle)
 {
-   DEBUG_LINE();
    install_url_data *installData = (install_url_data *) data;
 
    Result res = 0;
@@ -157,14 +148,12 @@ static Result action_install_url_close_dst(void *data, u32 index, bool succeeded
 static Result action_install_url_write_dst(void *data, u32 handle, u32 *bytesWritten, void *buffer, u64 offset,
       u32 size)
 {
-   DEBUG_LINE();
    return FSFILE_Write(handle, bytesWritten, offset, buffer, size, 0);
 }
 
 
 static bool action_install_url_error(void *data, u32 index, Result res)
 {
-   DEBUG_LINE();
    install_url_data *installData = (install_url_data *) data;
 
    if (res == R_FBI_CANCELLED)
@@ -188,7 +177,6 @@ static bool action_install_url_error(void *data, u32 index, Result res)
 
 static void action_install_url_install_update(void *data, float *progress, char *text)
 {
-   DEBUG_LINE();
    install_url_data *installData = (install_url_data *) data;
 
    if (installData->installInfo.finished)
@@ -218,7 +206,6 @@ static void action_install_url_install_update(void *data, float *progress, char 
 
 static Result task_data_op_copy(data_op_data *data, u32 index)
 {
-   DEBUG_LINE();
    data->currProcessed = 0;
    data->currTotal = 0;
 
@@ -330,7 +317,6 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
 
 void action_install_url(const char *urls)
 {
-   DEBUG_LINE();
    install_url_data *data = (install_url_data *) calloc(1, sizeof(install_url_data));
    data->installInfo.total = 0;
 
