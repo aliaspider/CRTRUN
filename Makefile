@@ -1,10 +1,11 @@
 TARGET := CTRRUN
 
 DEBUG                   = 0
-BUILD_3DSX              = 0
+BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 0
+CUSTOM_CRT0		= 0
 
 APP_TITLE            = CTRRUN
 APP_DESCRIPTION      = CTRRUN
@@ -20,6 +21,7 @@ APP_SYSTEM_MODE_EXT  = 124MB
 APP_BIG_TEXT_SECTION = 0
 
 OBJ :=
+OBJ += main.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
@@ -69,7 +71,13 @@ CFLAGS += -I.
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=  -g $(ARCH) -O3
-LDFLAGS += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ifeq ($(CUSTOM_CRT0),1)
+   LDFLAGS += -specs=ctr/3dsx_custom.specs
+else
+   LDFLAGS += -specs=3dsx.specs
+endif
+
+LDFLAGS += -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
@@ -91,7 +99,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA) $(TARGET).core
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ) libretro_ctr.a
 
@@ -155,7 +163,11 @@ else
 endif
 	3dsxtool $< $@ $(_3DSXFLAGS)
 
+ifeq ($(CUSTOM_CRT0),1)
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
+else
+$(TARGET).elf:
+endif
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
@@ -171,17 +183,12 @@ $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
-$(TARGET).core: $(TARGET).elf
-	echo $(APP_UNIQUE_ID) > $(TARGET).core
-
-
 clean:
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
 	rm -f $(TARGET).3ds
 	rm -f $(TARGET).cia
-	rm -f $(TARGET).core
 	rm -f $(TARGET).smdh
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
