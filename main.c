@@ -5,6 +5,7 @@
 #include <3ds.h>
 
 #include "common.h"
+#include "util.h"
 #include "ctr/ctr_debug.h"
 
 void wait_for_input(void)
@@ -33,6 +34,8 @@ void wait_for_input(void)
 __attribute((aligned(0x1000)))
 static u32 soc_buffer[0x100000 >> 2];
 
+u64 currTitleId;
+
 int main(int argc, char **argv)
 {
 
@@ -40,34 +43,29 @@ int main(int argc, char **argv)
 
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
+
    socInit(soc_buffer, sizeof(soc_buffer));
-//   osSetSpeedupEnable(true);
-
-   printf("test\n");
-
-
-   Handle tempAM = 0;
-   DEBUG_ERROR(srvGetServiceHandle(&tempAM, "am:net"));
-   svcCloseHandle(tempAM);
-
-   amInit();
-//   cfguInit();
-//   acInit();
-//   ptmuInit();
-//   pxiDevInit();
    httpcInit(0);
+   amInit();
 
    remoteinstall_receive_urls_network();
 
-   wait_for_input();
-
    amExit();
-//   cfguExit();
-//   acExit();
-//   ptmuExit();
-//   pxiDevExit();
    httpcExit();
    socExit();
 
+   DEBUG_VAR64(currTitleId);
+
+//   0x000400000BC00000ULL;
+   if (currTitleId)
+   {
+      DEBUG_ERROR(APT_PrepareToDoApplicationJump(0, currTitleId, util_get_title_destination(currTitleId)));
+      u8 param[0x300];
+      u8 hmac[0x20];
+
+      DEBUG_ERROR(APT_DoApplicationJump(param, sizeof(param), hmac));
+   }
+
+   wait_for_input();
    return 0;
 }

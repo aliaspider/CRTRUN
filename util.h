@@ -1,5 +1,7 @@
 #pragma once
 
+#include <3ds.h>
+
 typedef struct {
     u16 shortDescription[0x40];
     u16 longDescription[0x80];

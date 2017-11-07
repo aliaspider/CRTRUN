@@ -59,20 +59,13 @@ static void remoteinstall_network_free_data(remoteinstall_network_data* data) {
 
 void remoteinstall_receive_urls_network(void) {
     remoteinstall_network_data* data = (remoteinstall_network_data*) calloc(1, sizeof(remoteinstall_network_data));
-    if(data == NULL) {
-        printf("Failed to allocate network install data.");
-
-        return;
-    }
 
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     if(sock < 0) {
         printf("Failed to open server socket. (%i)", errno);
-
-        remoteinstall_network_free_data(data);
+        free(data);
         return;
     }
-
     data->serverSocket = sock;
 
     struct sockaddr_in server;
@@ -100,8 +93,13 @@ void remoteinstall_receive_urls_network(void) {
 
     while (true)
     {
+       hidScanInput();
        if(hidKeysDown() & KEY_B) {
            remoteinstall_network_free_data(data);
+           return;
+       }
+       if(hidKeysDown() & KEY_START) {
+           exit(0);
            return;
        }
 

@@ -20,9 +20,7 @@ typedef struct
 
    u32 responseCode;
    u64 currTitleId;
-   ticket_info ticketInfo;
    httpcContext *currContext;
-   char curr3dsxPath[FILE_PATH_MAX];
 
    data_op_data installInfo;
 } install_url_data;
@@ -43,7 +41,6 @@ static Result action_install_url_open_src(void *data, u32 index, u32 *handle)
 
    httpcContext *context = (httpcContext *) calloc(1, sizeof(httpcContext));
 
-   DEBUG_STR(installData->urls[index]);
    if (R_SUCCEEDED(res = util_http_open(context, &installData->responseCode, installData->urls[index], true)))
    {
       *handle = (u32) context;
@@ -85,8 +82,6 @@ static Result action_install_url_open_dst(void *data, u32 index, void *initialRe
 
    installData->responseCode = 0;
    installData->currTitleId = 0;
-   memset(&installData->ticketInfo, 0, sizeof(installData->ticketInfo));
-   memset(&installData->curr3dsxPath, 0, sizeof(installData->curr3dsxPath));
 
    if (*(u16 *) initialReadBlock == 0x2020)
    {
@@ -358,8 +353,6 @@ void action_install_url(const char *urls)
 
    data->responseCode = 0;
    data->currTitleId = 0;
-   memset(&data->ticketInfo, 0, sizeof(data->ticketInfo));
-   memset(&data->curr3dsxPath, 0, sizeof(data->curr3dsxPath));
 
    data->installInfo.data = data;
 
@@ -384,5 +377,10 @@ void action_install_url(const char *urls)
    data->installInfo.finished = true;
 
    DEBUG_ERROR(task_data_op_copy(&data->installInfo, 0));
+
+   extern u64 currTitleId;
+
+   currTitleId = data->currTitleId;
+
    action_install_url_free_data(data);
 }

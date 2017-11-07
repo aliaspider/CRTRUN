@@ -316,8 +316,7 @@ FS_MediaType util_get_title_destination(u64 titleId)
    u8 variation = (u8)(titleId & 0xFF);
 
    //     DSiWare                3DS                    DSiWare, System, DLP         Application           System Title
-   return platform == 0x0003 || (platform == 0x0004 && ((category & 0x8011) != 0 || (category == 0x0000
-                                 && variation == 0x02))) ? MEDIATYPE_NAND : MEDIATYPE_SD;
+   return platform == 0x0003 || (platform == 0x0004 && ((category & 0x8011) != 0 || (category == 0x0000 && variation == 0x02))) ? MEDIATYPE_NAND : MEDIATYPE_SD;
 }
 
 static u32 sigSizes[6] = {0x240, 0x140, 0x80, 0x240, 0x140, 0x80};
