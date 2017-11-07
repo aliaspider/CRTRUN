@@ -284,7 +284,11 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
                      bytesSinceUpdate = 0;
                      lastBytesPerSecondUpdate = time;
                   }
+                  printf("%llu/%llu %.2fKBytes/s (%s)\r", data->currProcessed, data->currTotal, data->copyBytesPerSecond / 1024.0f,
+                         data->estimatedRemainingSeconds);
+
                }
+               printf("\n");
 
                if (dstHandle != 0)
                {
