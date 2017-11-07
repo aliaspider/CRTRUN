@@ -25,6 +25,7 @@ OBJ += main.o
 OBJ += remote_install.o
 OBJ += installurl.o
 OBJ += util.o
+OBJ += error.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr

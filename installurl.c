@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "util.h"
+#include "ctr/ctr_debug.h"
 
 typedef struct
 {
@@ -223,6 +224,7 @@ static void action_install_url_install_update(void *data, float *progress, char 
 
 static Result task_data_op_copy(data_op_data *data, u32 index)
 {
+   DEBUG_LINE();
    data->currProcessed = 0;
    data->currTotal = 0;
 
@@ -334,8 +336,8 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
 
 void action_install_url(const char *urls)
 {
+   DEBUG_LINE();
    install_url_data *data = (install_url_data *) calloc(1, sizeof(install_url_data));
-
    data->installInfo.total = 0;
 
    size_t payloadLen = strlen(urls);
@@ -407,6 +409,7 @@ void action_install_url(const char *urls)
 
    data->installInfo.finished = true;
 
-   task_data_op_copy(&data->installInfo, data->installInfo.processed);
+   Result res = task_data_op_copy(&data->installInfo, data->installInfo.processed);
+   DEBUG_ERROR(res);
    action_install_url_free_data(data);
 }

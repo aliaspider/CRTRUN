@@ -8,6 +8,7 @@
 #include <3ds.h>
 
 #include "common.h"
+#include "ctr/ctr_debug.h"
 
 static int remoteinstall_network_recvwait(int sockfd, void* buf, size_t len, int flags) {
     errno = 0;
@@ -128,12 +129,6 @@ void remoteinstall_receive_urls_network(void) {
            }
 
            char* urls = (char*) calloc(size + 1, sizeof(char));
-           if(urls == NULL) {
-               printf("Failed to allocate URL buffer.");
-
-               remoteinstall_network_close_client(data);
-               return;
-           }
 
            if(remoteinstall_network_recvwait(data->clientSocket, urls, size, 0) != size) {
                printf("Failed to read URL(s). (%i)", errno);
@@ -143,9 +138,10 @@ void remoteinstall_receive_urls_network(void) {
                return;
            }
 
-           printf("urls : %s",urls);
-
+           printf("urls : %s\n",urls);
+           DEBUG_LINE();
            action_install_url(urls);
+           DEBUG_LINE();
 
            remoteinstall_network_close_client(data);
            free(urls);
