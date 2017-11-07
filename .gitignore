@@ -50,3 +50,15 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+
+# qtcreator
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
+
+objs/*
+*.vert.inc
+*.frag.inc
