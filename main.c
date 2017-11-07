@@ -67,5 +67,6 @@ int main(int argc, char **argv)
    }
 
    wait_for_input();
+   gfxExit();
    return 0;
 }
