@@ -9,7 +9,7 @@ CUSTOM_CRT0		= 0
 
 APP_TITLE            = CTRRUN
 APP_DESCRIPTION      = CTRRUN
-APP_AUTHOR           = Aliaspider
+APP_AUTHOR           = various
 APP_PRODUCT_CODE     = CTRRUN
 APP_UNIQUE_ID        = 0xBC000
 APP_ICON             = ctr/icon.png
@@ -22,6 +22,9 @@ APP_BIG_TEXT_SECTION = 0
 
 OBJ :=
 OBJ += main.o
+OBJ += remote_install.o
+OBJ += installurl.o
+OBJ += util.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
