@@ -52,9 +52,6 @@ typedef struct data_op_data_s {
     u64 currProcessed;
     u64 currTotal;
 
-    Result (*isSrcDirectory)(void* data, u32 index, bool* isDirectory);
-    Result (*makeDstDirectory)(void* data, u32 index);
-
     Result (*openSrc)(void* data, u32 index, u32* handle);
     Result (*closeSrc)(void* data, u32 index, bool succeeded, u32 handle);
 
@@ -65,16 +62,6 @@ typedef struct data_op_data_s {
     Result (*closeDst)(void* data, u32 index, bool succeeded, u32 handle);
 
     Result (*writeDst)(void* data, u32 handle, u32* bytesWritten, void* buffer, u64 offset, u32 size);
-
-    Result (*suspendCopy)(void* data, u32 index, u32* srcHandle, u32* dstHandle);
-    Result (*restoreCopy)(void* data, u32 index, u32* srcHandle, u32* dstHandle);
-
-    // Delete
-    Result (*delete)(void* data, u32 index);
-
-    // Suspend
-    Result (*suspend)(void* data, u32 index);
-    Result (*restore)(void* data, u32 index);
 
     // Errors
     bool (*error)(void* data, u32 index, Result res);
