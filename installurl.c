@@ -132,12 +132,6 @@ static Result action_install_url_close_dst(void *data, u32 index, bool succeeded
    return res;
 }
 
-static Result action_install_url_write_dst(void *data, u32 handle, u32 *bytesWritten, void *buffer, u64 offset,
-      u32 size)
-{
-   return FSFILE_Write(handle, bytesWritten, offset, buffer, size, 0);
-}
-
 static Result task_data_op_copy(data_op_data *data, u32 index)
 {
    data->currProcessed = 0;
@@ -197,7 +191,7 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
 
                   u32 bytesWritten = 0;
 
-                  if (R_FAILED(res = action_install_url_write_dst(data->data, dstHandle, &bytesWritten, buffer, data->currProcessed, bytesRead)))
+                  if (R_FAILED(res = FSFILE_Write(dstHandle, &bytesWritten, data->currProcessed, buffer, bytesRead, 0)))
                      break;
 
                   data->currProcessed += bytesWritten;
