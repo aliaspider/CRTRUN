@@ -575,7 +575,7 @@ void dump_result_value(Result val)
 {
    ctr_result_value res;
    res.val = val;
-   printf("result      : 0x%08X\n", val);
+   printf("result      : 0x%08lX\n", val);
    printf("description : %s (%u)\n", description_to_string(res.val), res.description);
    printf("module      : %s (%u)\n", module_to_string(res.val), res.module);
    printf("summary     : %s (%u)\n", summary_to_string(res.val), res.summary);

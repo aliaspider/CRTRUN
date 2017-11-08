@@ -2,7 +2,6 @@
 #include <3ds.h>
 
 #define INSTALL_URL_MAX 1024
-#define INSTALL_URLS_MAX 128
 #define FILE_PATH_MAX 512
 
 #define R_FBI_CANCELLED MAKERESULT(RL_PERMANENT, RS_CANCELED, RM_APPLICATION, 1)
@@ -37,22 +36,11 @@ typedef enum data_op_e {
 typedef struct data_op_data_s {
     void* data;
 
-    data_op op;
-
-    // Copy
-    u32 copyBufferSize;
-    bool copyEmpty;
-
-    u32 processed;
-    u32 total;
-
     u64 currProcessed;
     u64 currTotal;
 
     // General
-    volatile bool finished;
     Result result;
-    Handle cancelEvent;
 } data_op_data;
 
 

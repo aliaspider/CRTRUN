@@ -57,7 +57,7 @@ CFLAGS	 += -mword-relocations \
             -Werror=implicit-function-declaration \
             $(ARCH)
 
-#CFLAGS	+= -Wall
+CFLAGS	+= -Wall
 CFLAGS	+=  -DARM11 -D_3DS
 
 ifeq ($(DEBUG), 1)
