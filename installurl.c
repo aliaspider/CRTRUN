@@ -39,15 +39,6 @@ static Result action_install_url_open_src(void *data, u32 *handle)
    return res;
 }
 
-static Result action_install_url_get_src_size(void *data, u32 handle, u64 *size)
-{
-   u32 downloadSize = 0;
-   Result res = util_http_get_size((httpcContext *) handle, &downloadSize);
-
-   *size = downloadSize;
-   return res;
-}
-
 static Result action_install_url_open_dst(void *data, void *initialReadBlock, u64 size, u32 *handle)
 {
    install_url_data *installData = (install_url_data *) data;
@@ -94,7 +85,8 @@ static Result task_data_op_copy(data_op_data *data)
 
    if (R_SUCCEEDED(res = action_install_url_open_src(data->data, &srcHandle)))
    {
-      if (R_SUCCEEDED(res = action_install_url_get_src_size(data->data, srcHandle, &data->currTotal)))
+      data->currTotal = 0;
+      if (R_SUCCEEDED(res = httpcGetDownloadSizeState((httpcContext *) srcHandle, NULL, (u32*)&data->currTotal)))
       {
          if (data->currTotal == 0)
             res = R_FBI_BAD_DATA;

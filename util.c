@@ -125,41 +125,6 @@ Result util_http_get_size(httpcContext *context, u32 *size)
    return httpcGetDownloadSizeState(context, NULL, size);
 }
 
-Result util_http_get_file_name(httpcContext *context, char *out, u32 size)
-{
-   if (context == NULL || out == NULL)
-      return R_FBI_INVALID_ARGUMENT;
-
-   Result res = 0;
-
-   char *header = (char *) calloc(1, size + 64);
-
-   if (header != NULL)
-   {
-      if (R_SUCCEEDED(res = httpcGetResponseHeader(context, "Content-Disposition", header, size + 64)))
-      {
-         char *start = strstr(header, "filename=");
-
-         if (start != NULL)
-         {
-            char format[32];
-            snprintf(format, sizeof(format), "filename=\"%%%lu[^\"]\"", size);
-
-            if (sscanf(start, format, out) != 1)
-               res = R_FBI_BAD_DATA;
-         }
-         else
-            res = R_FBI_BAD_DATA;
-      }
-
-      free(header);
-   }
-   else
-      res = R_FBI_OUT_OF_MEMORY;
-
-   return res;
-}
-
 Result util_http_read(httpcContext *context, u32 *bytesRead, void *buffer, u32 size)
 {
    if (context == NULL || buffer == NULL)
