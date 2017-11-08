@@ -25,14 +25,6 @@ typedef struct
    data_op_data installInfo;
 } install_url_data;
 
-static void action_install_url_free_data(install_url_data *data)
-{
-   if (data->finished != NULL)
-      data->finished(data->userData);
-
-   free(data);
-}
-
 static Result action_install_url_open_src(void *data, u32 index, u32 *handle)
 {
    install_url_data *installData = (install_url_data *) data;
@@ -146,59 +138,6 @@ static Result action_install_url_write_dst(void *data, u32 handle, u32 *bytesWri
    return FSFILE_Write(handle, bytesWritten, offset, buffer, size, 0);
 }
 
-
-static bool action_install_url_error(void *data, u32 index, Result res)
-{
-   install_url_data *installData = (install_url_data *) data;
-
-   if (res == R_FBI_CANCELLED)
-   {
-      printf("Failure, Install cancelled.\n");
-      return false;
-   }
-   else if (res != R_FBI_WRONG_SYSTEM)
-   {
-      char *url = installData->urls[index];
-
-      if (res == R_FBI_HTTP_RESPONSE_CODE)
-         printf("Failed to install from URL.\n%s...\nHTTP server returned response code %d", url, installData->responseCode);
-      else
-         printf("Failed to install from URL.\n%s", url);
-
-   }
-
-   return index < installData->installInfo.total - 1;
-}
-
-static void action_install_url_install_update(void *data, float *progress, char *text)
-{
-   install_url_data *installData = (install_url_data *) data;
-
-   if (installData->installInfo.finished)
-   {
-      if (R_SUCCEEDED(installData->installInfo.result))
-         printf("Success, Install finished.\n");
-
-      action_install_url_free_data(installData);
-
-      return;
-   }
-
-   if (hidKeysDown() & KEY_B)
-      svcSignalEvent(installData->installInfo.cancelEvent);
-
-   *progress = installData->installInfo.currTotal != 0 ? (float)((double) installData->installInfo.currProcessed /
-               (double) installData->installInfo.currTotal) : 0;
-   printf("%lu / %lu\n%.2f %s / %.2f %s\n%.2f %s/s, ETA %s\n", installData->installInfo.processed,
-          installData->installInfo.total, util_get_display_size(installData->installInfo.currProcessed),
-          util_get_display_size_units(installData->installInfo.currProcessed),
-          util_get_display_size(installData->installInfo.currTotal),
-          util_get_display_size_units(installData->installInfo.currTotal),
-          util_get_display_size(installData->installInfo.copyBytesPerSecond),
-          util_get_display_size_units(installData->installInfo.copyBytesPerSecond),
-          util_get_display_eta(installData->installInfo.estimatedRemainingSeconds));
-}
-
 static Result task_data_op_copy(data_op_data *data, u32 index)
 {
    data->currProcessed = 0;
@@ -210,9 +149,9 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
 
    u32 srcHandle = 0;
 
-   if (R_SUCCEEDED(res = data->openSrc(data->data, index, &srcHandle)))
+   if (R_SUCCEEDED(res = action_install_url_open_src(data->data, index, &srcHandle)))
    {
-      if (R_SUCCEEDED(res = data->getSrcSize(data->data, srcHandle, &data->currTotal)))
+      if (R_SUCCEEDED(res = action_install_url_get_src_size(data->data, srcHandle, &data->currTotal)))
       {
          if (data->currTotal == 0)
          {
@@ -220,8 +159,8 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
             {
                u32 dstHandle = 0;
 
-               if (R_SUCCEEDED(res = data->openDst(data->data, index, NULL, data->currTotal, &dstHandle)))
-                  res = data->closeDst(data->data, index, true, dstHandle);
+               if (R_SUCCEEDED(res = action_install_url_open_dst(data->data, index, NULL, data->currTotal, &dstHandle)))
+                  res = action_install_url_close_dst(data->data, index, true, dstHandle);
             }
             else
                res = R_FBI_BAD_DATA;
@@ -244,7 +183,7 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
                {
                   u32 bytesRead = 0;
 
-                  if (R_FAILED(res = data->readSrc(data->data, srcHandle, &bytesRead, buffer, data->currProcessed,
+                  if (R_FAILED(res = action_install_url_read_src(data->data, srcHandle, &bytesRead, buffer, data->currProcessed,
                                                    data->copyBufferSize)))
                      break;
 
@@ -252,13 +191,13 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
                   {
                      firstRun = false;
 
-                     if (R_FAILED(res = data->openDst(data->data, index, buffer, data->currTotal, &dstHandle)))
+                     if (R_FAILED(res = action_install_url_open_dst(data->data, index, buffer, data->currTotal, &dstHandle)))
                         break;
                   }
 
                   u32 bytesWritten = 0;
 
-                  if (R_FAILED(res = data->writeDst(data->data, dstHandle, &bytesWritten, buffer, data->currProcessed, bytesRead)))
+                  if (R_FAILED(res = action_install_url_write_dst(data->data, dstHandle, &bytesWritten, buffer, data->currProcessed, bytesRead)))
                      break;
 
                   data->currProcessed += bytesWritten;
@@ -292,7 +231,7 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
 
                if (dstHandle != 0)
                {
-                  Result closeDstRes = data->closeDst(data->data, index, res == 0, dstHandle);
+                  Result closeDstRes = action_install_url_close_dst(data->data, index, res == 0, dstHandle);
 
                   if (R_SUCCEEDED(res))
                      res = closeDstRes;
@@ -305,7 +244,7 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
          }
       }
 
-      Result closeSrcRes = data->closeSrc(data->data, index, res == 0, srcHandle);
+      Result closeSrcRes = action_install_url_close_src(data->data, index, res == 0, srcHandle);
 
       if (R_SUCCEEDED(res))
          res = closeSrcRes;
@@ -367,17 +306,6 @@ void action_install_url(const char *urls)
 
    data->installInfo.processed = data->installInfo.total;
 
-   data->installInfo.openSrc = action_install_url_open_src;
-   data->installInfo.closeSrc = action_install_url_close_src;
-   data->installInfo.getSrcSize = action_install_url_get_src_size;
-   data->installInfo.readSrc = action_install_url_read_src;
-
-   data->installInfo.openDst = action_install_url_open_dst;
-   data->installInfo.closeDst = action_install_url_close_dst;
-   data->installInfo.writeDst = action_install_url_write_dst;
-
-   data->installInfo.error = action_install_url_error;
-
    data->installInfo.finished = true;
 
    DEBUG_ERROR(task_data_op_copy(&data->installInfo, 0));
@@ -386,5 +314,5 @@ void action_install_url(const char *urls)
 
    currTitleId = data->currTitleId;
 
-   action_install_url_free_data(data);
+   free(data);
 }
