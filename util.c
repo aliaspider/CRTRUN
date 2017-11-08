@@ -46,26 +46,12 @@ u64 util_get_tmd_title_id(u8 *tmd)
 
 Result util_http_open(httpcContext *context, u32 *responseCode, const char *url, bool userAgent)
 {
-   return util_http_open_ranged(context, responseCode, url, userAgent, 0, 0);
-}
-
-Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const char *url, bool userAgent, u32 rangeStart,
-                             u32 rangeEnd)
-{
 
    if (context == NULL || url == NULL)
       return R_FBI_INVALID_ARGUMENT;
 
    char currUrl[1024];
    strncpy(currUrl, url, sizeof(currUrl));
-
-   char range[64];
-
-   if (rangeEnd > rangeStart)
-      snprintf(range, sizeof(range), "%lu-%lu", rangeStart, rangeEnd);
-
-   else
-      snprintf(range, sizeof(range), "%lu-", rangeStart);
 
    Result res = 0;
 
@@ -80,7 +66,6 @@ Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const cha
 
          if (R_SUCCEEDED(res = httpcSetSSLOpt(context, SSLCOPT_DisableVerify))
                && (!userAgent || R_SUCCEEDED(res = httpcAddRequestHeaderField(context, "User-Agent", HTTP_USER_AGENT)))
-               && (rangeStart == 0 || R_SUCCEEDED(res = httpcAddRequestHeaderField(context, "Range", range)))
                && R_SUCCEEDED(res = httpcSetKeepAlive(context, HTTPC_KEEPALIVE_ENABLED))
                && R_SUCCEEDED(res = httpcBeginRequest(context))
                && R_SUCCEEDED(res = httpcGetResponseStatusCodeTimeout(context, &response, HTTP_TIMEOUT)))
@@ -117,19 +102,8 @@ Result util_http_open_ranged(httpcContext *context, u32 *responseCode, const cha
    return res;
 }
 
-Result util_http_get_size(httpcContext *context, u32 *size)
-{
-   if (context == NULL || size == NULL)
-      return R_FBI_INVALID_ARGUMENT;
-
-   return httpcGetDownloadSizeState(context, NULL, size);
-}
-
 Result util_http_read(httpcContext *context, u32 *bytesRead, void *buffer, u32 size)
 {
-   if (context == NULL || buffer == NULL)
-      return R_FBI_INVALID_ARGUMENT;
-
    Result res = 0;
 
    u32 startPos = 0;
@@ -166,10 +140,3 @@ Result util_http_read(httpcContext *context, u32 *bytesRead, void *buffer, u32 s
    return res;
 }
 
-Result util_http_close(httpcContext *context)
-{
-   if (context == NULL)
-      return R_FBI_INVALID_ARGUMENT;
-
-   return httpcCloseContext(context);
-}

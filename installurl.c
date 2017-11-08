@@ -9,36 +9,6 @@
 #include "util.h"
 #include "ctr/ctr_debug.h"
 
-typedef struct
-{
-   char url[INSTALL_URL_MAX];
-
-   char path3dsx[FILE_PATH_MAX];
-
-   void *userData;
-
-   u32 responseCode;
-   u64 currTitleId;
-
-   data_op_data installInfo;
-} install_url_data;
-
-static Result action_install_url_open_src(void *data, u32 *handle)
-{
-   install_url_data *installData = (install_url_data *) data;
-
-   Result res = 0;
-
-   httpcContext *context = (httpcContext *) calloc(1, sizeof(httpcContext));
-
-   if (R_SUCCEEDED(res = util_http_open(context, &installData->responseCode, installData->url, true)))
-      *handle = (u32) context;
-   else
-      free(context);
-
-   return res;
-}
-
 static Result action_install_url_open_dst(void *data, void *initialReadBlock, u64 size, u32 *handle)
 {
    install_url_data *installData = (install_url_data *) data;
@@ -48,11 +18,11 @@ static Result action_install_url_open_dst(void *data, void *initialReadBlock, u6
    installData->responseCode = 0;
    installData->currTitleId = 0;
 
-   DEBUG_VAR(initialReadBlock);
-
    if (*(u16 *) initialReadBlock == 0x2020)
    {
       u64 titleId = util_get_cia_title_id((u8 *) initialReadBlock);
+      if(!titleId)
+         return R_FBI_BAD_DATA;
 
       if (util_get_title_destination(titleId) == MEDIATYPE_NAND)
          return R_FBI_BAD_DATA;
@@ -81,18 +51,18 @@ static Result task_data_op_copy(data_op_data *data)
 
    Result res = 0;
 
-   u32 srcHandle = 0;
+   httpcContext* srcHandle = (httpcContext *) calloc(1, sizeof(httpcContext));
 
-   if (R_SUCCEEDED(res = action_install_url_open_src(data->data, &srcHandle)))
+    if (R_SUCCEEDED(res = util_http_open(srcHandle, &data->url_data->responseCode, data->url_data->url, true)))
    {
       data->currTotal = 0;
-      if (R_SUCCEEDED(res = httpcGetDownloadSizeState((httpcContext *) srcHandle, NULL, (u32*)&data->currTotal)))
+      if (R_SUCCEEDED(res = httpcGetDownloadSizeState(srcHandle, NULL, (u32*)&data->currTotal)))
       {
          if (data->currTotal == 0)
             res = R_FBI_BAD_DATA;
          else
          {
-            static u8 buffer[128 * 1024];
+            static u8 buffer[0x4000];
 
             u32 dstHandle = 0;
 
@@ -100,10 +70,10 @@ static Result task_data_op_copy(data_op_data *data)
             {
                u32 bytesRead = 0;
 
-               if (R_FAILED(res = util_http_read((httpcContext *) srcHandle, &bytesRead, buffer, sizeof(buffer))))
+               if (R_FAILED(res = util_http_read(srcHandle, &bytesRead, buffer, sizeof(buffer))))
                   break;
 
-               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data->data, buffer, data->currTotal, &dstHandle)))
+               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data->url_data, buffer, data->currTotal, &dstHandle)))
                   break;
 
                u32 bytesWritten = 0;
@@ -121,7 +91,7 @@ static Result task_data_op_copy(data_op_data *data)
 
             if (dstHandle != 0)
             {
-               Result closeDstRes = action_install_url_close_dst(data->data, res == 0, dstHandle);
+               Result closeDstRes = action_install_url_close_dst(data->url_data, res == 0, dstHandle);
 
                if (R_SUCCEEDED(res))
                   res = closeDstRes;
@@ -129,7 +99,7 @@ static Result task_data_op_copy(data_op_data *data)
          }
       }
 
-      Result closeSrcRes = util_http_close((httpcContext *) srcHandle);
+      Result closeSrcRes = httpcCloseContext(srcHandle);
 
       if (R_SUCCEEDED(res))
          res = closeSrcRes;
@@ -148,7 +118,7 @@ void action_install_url(const char *urls)
    data->responseCode = 0;
    data->currTitleId = 0;
 
-   data->installInfo.data = data;
+   data->installInfo.url_data = data;
 
 
    DEBUG_ERROR(task_data_op_copy(&data->installInfo));
