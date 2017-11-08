@@ -24,35 +24,22 @@ typedef struct
 } argData_s;
 
 
-static int recvall(int sock, void *buffer, int size, int flags)
+static void recvall(int sock, void *buffer, int size, int flags)
 {
-   int len, sizeleft = size;
-
-   while (sizeleft)
+   int ret;
+   size_t read = 0;
+   while (read < size)
    {
-      len = recv(sock, buffer, sizeleft, flags);
+      ret = recv(sock, buffer + read, size - read, flags);
 
-      if (!len)
+      if(ret > 0)
+         read += ret;
+      else if (errno != EAGAIN && errno != EWOULDBLOCK)
       {
-         size = 0;
-         break;
-      }
-      else if (len < 0)
-      {
-         if (errno != EAGAIN && errno != EWOULDBLOCK)
-         {
-            DEBUG_ERROR(errno);
-            break;
-         }
-      }
-      else
-      {
-         sizeleft -= len;
-         buffer += len;
+         DEBUG_ERROR(errno);
+         return;
       }
    }
-
-   return size;
 }
 
 static int decompress(int sock, FILE *fh, size_t filesize)
@@ -62,43 +49,34 @@ static int decompress(int sock, FILE *fh, size_t filesize)
 
    int ret;
    unsigned have;
-   z_stream strm;
-   size_t chunksize;
+   z_stream stream = {};
 
-   /* allocate inflate state */
-   strm.zalloc = Z_NULL;
-   strm.zfree = Z_NULL;
-   strm.opaque = Z_NULL;
-   strm.avail_in = 0;
-   strm.next_in = Z_NULL;
-   inflateInit(&strm);
+   inflateInit(&stream);
 
-   size_t total = 0;
-
-   // decompress until deflate stream ends or end of file
    do
    {
-      recvall(sock, &chunksize, 4, 0);
-      strm.avail_in = recvall(sock, in, chunksize, 0);
-      strm.next_in = in;
-      do
+      stream.avail_out = sizeof(in);
+      stream.next_out = out;
+      while(stream.avail_out > 0 && ret != Z_STREAM_END)
       {
-         strm.avail_out = ZLIB_CHUNK;
-         strm.next_out = out;
-         DEBUG_ERROR(ret = inflate(&strm, Z_NO_FLUSH));
-         have = ZLIB_CHUNK - strm.avail_out;
+         if(!stream.avail_in)
+         {
+            stream.next_in = in;
+            recvall(sock, &stream.avail_in, 4, 0);
+            recvall(sock, stream.next_in, stream.avail_in, 0);
+         }
+         DEBUG_ERROR(ret = inflate(&stream, Z_NO_FLUSH));
+      }
+      have = sizeof(out) - stream.avail_out;
 
 //         fwrite(out, 1, have, fh);
 
-         total += have;
-         printf("\r%zu (%d%%)",total, (100 * total) / filesize);
-      }
-      while (strm.avail_out == 0);
-   }
-   while (ret != Z_STREAM_END);
+      printf("\r%zu (%d%%)",stream.total_out, (100 * stream.total_out) / filesize);
+   }while (ret != Z_STREAM_END);
+
    printf("\n");
 
-   inflateEnd(&strm);
+   inflateEnd(&stream);
    return ret;
 }
 
