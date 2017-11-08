@@ -9,7 +9,7 @@
 #include "util.h"
 #include "ctr/ctr_debug.h"
 
-static Result action_install_url_open_dst(void *data, void *initialReadBlock, u64 size, u32 *handle)
+static Result action_install_url_open_dst(void *data, void *initialReadBlock, u32 *handle)
 {
    install_url_data *installData = (install_url_data *) data;
 
@@ -65,7 +65,7 @@ static Result task_data_op_copy(install_url_data *data)
                if (R_FAILED(res = util_http_read(&srcHandle, &bytesRead, buffer, sizeof(buffer))))
                   break;
 
-               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data, buffer, data->currTotal, &dstHandle)))
+               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data, buffer, &dstHandle)))
                   break;
 
                u32 bytesWritten = 0;

@@ -19,8 +19,8 @@ void dump_result_value(Result val);
 #define DEBUG_VAR(X) printf( "%-20s: 0x%08lX\n", #X, (u32)(X))
 #define DEBUG_INT(X) printf( "%-20s: %10i\n", #X, (s32)(X))
 #define DEBUG_VAR64(X) printf( #X"\r\t\t\t\t : 0x%016llX\n", (u64)(X))
-#define DEBUG_RESULT(X) do{Result res = X; if(res)dump_result_value(res);}while(0)
-#define DEBUG_ERROR(X) do{int res = X; if(res < 0){printf("@%s:%s:%d --> error : %i\n",__FUNCTION__,__FILE__, __LINE__, res);fflush(stdout);}}while(0)
+#define DEBUG_RESULT(X) do{Result res_ = X; if(res_)dump_result_value(res_);}while(0)
+#define DEBUG_ERROR(X) do{int res_ = X; if(res_ < 0){printf("@%s:%s:%d --> error : %i\n",__FUNCTION__,__FILE__, __LINE__, res_);fflush(stdout);}}while(0)
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
 #define PRINTF_LINE(X) "\x1b["X";0H"

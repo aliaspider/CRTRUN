@@ -50,8 +50,6 @@ int main(int argc, char **argv)
    amInit();
 
 #if 1
-//   DEBUG_HOLD();
-   currTitleId = 0x000400000BC00000ULL;
    netloaderTask();
 #else
    remoteinstall_receive_urls_network();
@@ -63,10 +61,10 @@ int main(int argc, char **argv)
 
    DEBUG_VAR64(currTitleId);
 
-//   0x000400000BC00000ULL;
+//   currTitleId = 0x000400000BC00000ULL;
    if (currTitleId)
    {
-      DEBUG_RESULT(APT_PrepareToDoApplicationJump(0, currTitleId, util_get_title_destination(currTitleId)));
+      DEBUG_RESULT(APT_PrepareToDoApplicationJump(0, currTitleId, MEDIATYPE_SD));
       u8 param[0x300];
       u8 hmac[0x20];
 
