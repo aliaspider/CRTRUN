@@ -48,10 +48,8 @@ struct install_url_data
 {
    char url[INSTALL_URL_MAX];
 
-   void *userData;
-
    u32 responseCode;
-   u64 currTitleId;
+   u64 titleId;
 
    data_op_data installInfo;
 };

@@ -16,7 +16,7 @@ static Result action_install_url_open_dst(void *data, void *initialReadBlock, u6
    Result res = 0;
 
    installData->responseCode = 0;
-   installData->currTitleId = 0;
+   installData->titleId = 0;
 
    if (*(u16 *) initialReadBlock == 0x2020)
    {
@@ -28,7 +28,7 @@ static Result action_install_url_open_dst(void *data, void *initialReadBlock, u6
          return R_FBI_BAD_DATA;
 
       if (R_SUCCEEDED(res = AM_StartCiaInstall(MEDIATYPE_SD, handle)))
-         installData->currTitleId = titleId;
+         installData->titleId = titleId;
    }
    else
       return R_FBI_BAD_DATA;
@@ -51,12 +51,12 @@ static Result task_data_op_copy(data_op_data *data)
 
    Result res = 0;
 
-   httpcContext* srcHandle = (httpcContext *) calloc(1, sizeof(httpcContext));
+   httpcContext srcHandle = {};
 
-    if (R_SUCCEEDED(res = util_http_open(srcHandle, &data->url_data->responseCode, data->url_data->url, true)))
+    if (R_SUCCEEDED(res = util_http_open(&srcHandle, &data->url_data->responseCode, data->url_data->url, true)))
    {
       data->currTotal = 0;
-      if (R_SUCCEEDED(res = httpcGetDownloadSizeState(srcHandle, NULL, (u32*)&data->currTotal)))
+      if (R_SUCCEEDED(res = httpcGetDownloadSizeState(&srcHandle, NULL, (u32*)&data->currTotal)))
       {
          if (data->currTotal == 0)
             res = R_FBI_BAD_DATA;
@@ -70,7 +70,7 @@ static Result task_data_op_copy(data_op_data *data)
             {
                u32 bytesRead = 0;
 
-               if (R_FAILED(res = util_http_read(srcHandle, &bytesRead, buffer, sizeof(buffer))))
+               if (R_FAILED(res = util_http_read(&srcHandle, &bytesRead, buffer, sizeof(buffer))))
                   break;
 
                if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data->url_data, buffer, data->currTotal, &dstHandle)))
@@ -99,7 +99,7 @@ static Result task_data_op_copy(data_op_data *data)
          }
       }
 
-      Result closeSrcRes = httpcCloseContext(srcHandle);
+      Result closeSrcRes = httpcCloseContext(&srcHandle);
 
       if (R_SUCCEEDED(res))
          res = closeSrcRes;
@@ -110,22 +110,21 @@ static Result task_data_op_copy(data_op_data *data)
 
 void action_install_url(const char *urls)
 {
-   install_url_data *data = (install_url_data *) calloc(1, sizeof(install_url_data));
+   install_url_data data;
 
-   strncpy(data->url, "http://", 7);
-   strncpy(&data->url[7], urls, sizeof(data->url) - 7);
+   strncpy(data.url, "http://", 7);
+   strncpy(&data.url[7], urls, sizeof(data.url) - 7);
 
-   data->responseCode = 0;
-   data->currTitleId = 0;
+   data.responseCode = 0;
+   data.titleId = 0;
 
-   data->installInfo.url_data = data;
+   data.installInfo.url_data = &data;
 
 
-   DEBUG_ERROR(task_data_op_copy(&data->installInfo));
+   DEBUG_ERROR(task_data_op_copy(&data.installInfo));
 
    extern u64 currTitleId;
 
-   currTitleId = data->currTitleId;
+   currTitleId = data.titleId;
 
-   free(data);
 }
