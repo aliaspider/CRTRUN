@@ -8,7 +8,6 @@
 #include "util.h"
 #include "ctr/ctr_debug.h"
 
-//u32 __stacksize__ = 0x100000;
 
 void wait_for_input(void)
 {
@@ -50,7 +49,13 @@ int main(int argc, char **argv)
    httpcInit(0);
    amInit();
 
+#if 1
+//   DEBUG_HOLD();
+   currTitleId = 0x000400000BC00000ULL;
+   netloaderTask();
+#else
    remoteinstall_receive_urls_network();
+#endif
 
    amExit();
    httpcExit();
@@ -61,11 +66,11 @@ int main(int argc, char **argv)
 //   0x000400000BC00000ULL;
    if (currTitleId)
    {
-      DEBUG_ERROR(APT_PrepareToDoApplicationJump(0, currTitleId, util_get_title_destination(currTitleId)));
+      DEBUG_RESULT(APT_PrepareToDoApplicationJump(0, currTitleId, util_get_title_destination(currTitleId)));
       u8 param[0x300];
       u8 hmac[0x20];
 
-      DEBUG_ERROR(APT_DoApplicationJump(param, sizeof(param), hmac));
+      DEBUG_RESULT(APT_DoApplicationJump(param, sizeof(param), hmac));
    }
 
    wait_for_input();

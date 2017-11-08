@@ -32,17 +32,6 @@ typedef enum data_op_e {
 } data_op;
 
 typedef struct install_url_data install_url_data;
-typedef struct data_op_data data_op_data;
-
-struct data_op_data {
-    install_url_data* url_data;
-
-    u64 currProcessed;
-    u64 currTotal;
-
-    // General
-    Result result;
-};
 
 struct install_url_data
 {
@@ -51,10 +40,15 @@ struct install_url_data
    u32 responseCode;
    u64 titleId;
 
-   data_op_data installInfo;
+   u64 currProcessed;
+   u64 currTotal;
+
+   // General
+   Result result;
 };
 
 
+void netloaderTask(void);
 
 void remoteinstall_receive_urls_network(void);
 

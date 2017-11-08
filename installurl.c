@@ -36,15 +36,7 @@ static Result action_install_url_open_dst(void *data, void *initialReadBlock, u6
    return res;
 }
 
-static Result action_install_url_close_dst(void *data, bool succeeded, u32 handle)
-{
-   if (!succeeded)
-      return AM_CancelCIAInstall(handle);
-
-   return AM_FinishCiaInstall(handle);
-}
-
-static Result task_data_op_copy(data_op_data *data)
+static Result task_data_op_copy(install_url_data *data)
 {
    data->currProcessed = 0;
    data->currTotal = 0;
@@ -53,7 +45,7 @@ static Result task_data_op_copy(data_op_data *data)
 
    httpcContext srcHandle = {};
 
-    if (R_SUCCEEDED(res = util_http_open(&srcHandle, &data->url_data->responseCode, data->url_data->url, true)))
+    if (R_SUCCEEDED(res = util_http_open(&srcHandle, &data->responseCode, data->url, true)))
    {
       data->currTotal = 0;
       if (R_SUCCEEDED(res = httpcGetDownloadSizeState(&srcHandle, NULL, (u32*)&data->currTotal)))
@@ -73,7 +65,7 @@ static Result task_data_op_copy(data_op_data *data)
                if (R_FAILED(res = util_http_read(&srcHandle, &bytesRead, buffer, sizeof(buffer))))
                   break;
 
-               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data->url_data, buffer, data->currTotal, &dstHandle)))
+               if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data, buffer, data->currTotal, &dstHandle)))
                   break;
 
                u32 bytesWritten = 0;
@@ -91,7 +83,12 @@ static Result task_data_op_copy(data_op_data *data)
 
             if (dstHandle != 0)
             {
-               Result closeDstRes = action_install_url_close_dst(data->url_data, res == 0, dstHandle);
+               Result closeDstRes;
+
+               if (res == 0)
+                  closeDstRes = AM_FinishCiaInstall(dstHandle);
+               else
+                  closeDstRes = AM_CancelCIAInstall(dstHandle);
 
                if (R_SUCCEEDED(res))
                   res = closeDstRes;
@@ -110,18 +107,12 @@ static Result task_data_op_copy(data_op_data *data)
 
 void action_install_url(const char *urls)
 {
-   install_url_data data;
+   install_url_data data = {};
 
    strncpy(data.url, "http://", 7);
    strncpy(&data.url[7], urls, sizeof(data.url) - 7);
 
-   data.responseCode = 0;
-   data.titleId = 0;
-
-   data.installInfo.url_data = &data;
-
-
-   DEBUG_ERROR(task_data_op_copy(&data.installInfo));
+   DEBUG_RESULT(task_data_op_copy(&data));
 
    extern u64 currTitleId;
 

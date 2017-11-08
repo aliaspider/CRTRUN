@@ -11,7 +11,11 @@ APP_TITLE            = CTRRUN
 APP_DESCRIPTION      = CTRRUN
 APP_AUTHOR           = various
 APP_PRODUCT_CODE     = CTRRUN
-APP_UNIQUE_ID        = 0xBC000
+ifeq ($(DEBUG), 1)
+   APP_UNIQUE_ID        = 0xBC001
+else
+   APP_UNIQUE_ID        = 0xBC000
+endif
 APP_ICON             = ctr/icon.png
 APP_BANNER           = ctr/banner.png
 APP_AUDIO            = ctr/silent.wav
@@ -26,6 +30,7 @@ OBJ += remote_install.o
 OBJ += installurl.o
 OBJ += util.o
 OBJ += error.o
+OBJ += netloader.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
@@ -33,10 +38,6 @@ endif
 
 ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
-endif
-
-ifeq ($(strip $(CTRULIB)),)
-   CTRULIB = $(DEVKITPRO)/libctru
 endif
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
@@ -47,23 +48,22 @@ APP_UNIQUE_ID     := $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
 
 MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
 
-INCDIRS := -I$(CTRULIB)/include
-LIBDIRS := -L. -L$(CTRULIB)/lib
+INCDIRS := -I$(DEVKITPRO)/libctru/include -I$(DEVKITPRO)/portlibs/armv6k/include
+LIBDIRS := -L. -L$(DEVKITPRO)/libctru/lib -L $(DEVKITPRO)/portlibs/armv6k/lib
 
 ARCH  := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
-CFLAGS	 += -mword-relocations \
-            -fomit-frame-pointer -ffast-math \
-            -Werror=implicit-function-declaration \
-            $(ARCH)
+CFLAGS += -mword-relocations -ffast-math -Werror=implicit-function-declaration $(ARCH)
 
-CFLAGS	+= -Wall
-CFLAGS	+=  -DARM11 -D_3DS
+CFLAGS += -Wall
+CFLAGS += -DARM11 -D_3DS
 
 ifeq ($(DEBUG), 1)
-   CFLAGS	+= -O0 -g
+   CFLAGS   += -O0 -g
+   LIBS     += -lctrud
 else
-   CFLAGS	+= -O3
+   CFLAGS   += -O3 -fomit-frame-pointer
+   LIBS     += -lctru
 endif
 
 ifeq ($(LIBCTRU_NO_DEPRECATION), 1)
@@ -85,7 +85,7 @@ LDFLAGS += -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
-LIBS	:= -lctru -lm
+LIBS += -lm -lz
 
 ifeq ($(BUILD_3DSX), 1)
 TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
