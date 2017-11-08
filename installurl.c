@@ -61,11 +61,6 @@ static Result action_install_url_get_src_size(void *data, u32 handle, u64 *size)
    return res;
 }
 
-static Result action_install_url_read_src(void *data, u32 handle, u32 *bytesRead, void *buffer, u64 offset, u32 size)
-{
-   return util_http_read((httpcContext *) handle, bytesRead, buffer, size);
-}
-
 static Result action_install_url_open_dst(void *data, u32 index, void *initialReadBlock, u64 size, u32 *handle)
 {
    install_url_data *installData = (install_url_data *) data;
@@ -74,6 +69,8 @@ static Result action_install_url_open_dst(void *data, u32 index, void *initialRe
 
    installData->responseCode = 0;
    installData->currTitleId = 0;
+
+   DEBUG_VAR(initialReadBlock);
 
    if (*(u16 *) initialReadBlock == 0x2020)
    {
@@ -137,8 +134,6 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
    data->currProcessed = 0;
    data->currTotal = 0;
 
-   data->copyBytesPerSecond = 0;
-
    Result res = 0;
 
    u32 srcHandle = 0;
@@ -148,17 +143,7 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
       if (R_SUCCEEDED(res = action_install_url_get_src_size(data->data, srcHandle, &data->currTotal)))
       {
          if (data->currTotal == 0)
-         {
-            if (data->copyEmpty)
-            {
-               u32 dstHandle = 0;
-
-               if (R_SUCCEEDED(res = action_install_url_open_dst(data->data, index, NULL, data->currTotal, &dstHandle)))
-                  res = action_install_url_close_dst(data->data, index, true, dstHandle);
-            }
-            else
-               res = R_FBI_BAD_DATA;
-         }
+            res = R_FBI_BAD_DATA;
          else
          {
             u8 *buffer = (u8 *) calloc(1, data->copyBufferSize);
@@ -171,23 +156,16 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
                u64 lastBytesPerSecondUpdate = osGetTime();
                u32 bytesSinceUpdate = 0;
 
-               bool firstRun = true;
 
                while (data->currProcessed < data->currTotal)
                {
                   u32 bytesRead = 0;
 
-                  if (R_FAILED(res = action_install_url_read_src(data->data, srcHandle, &bytesRead, buffer, data->currProcessed,
-                                                   data->copyBufferSize)))
+                  if (R_FAILED(res = util_http_read((httpcContext *) srcHandle, &bytesRead, buffer, data->copyBufferSize)))
                      break;
 
-                  if (firstRun)
-                  {
-                     firstRun = false;
-
-                     if (R_FAILED(res = action_install_url_open_dst(data->data, index, buffer, data->currTotal, &dstHandle)))
+                  if (!dstHandle && R_FAILED(res = action_install_url_open_dst(data->data, index, buffer, data->currTotal, &dstHandle)))
                         break;
-                  }
 
                   u32 bytesWritten = 0;
 
@@ -195,32 +173,11 @@ static Result task_data_op_copy(data_op_data *data, u32 index)
                      break;
 
                   data->currProcessed += bytesWritten;
-                  bytesSinceUpdate += bytesWritten;
 
-                  u64 time = osGetTime();
-                  u64 elapsed = time - lastBytesPerSecondUpdate;
-
-                  if (elapsed >= 1000)
-                  {
-                     data->copyBytesPerSecond = (u32)(bytesSinceUpdate / (elapsed / 1000.0f));
-
-                     if (ioStartTime != 0)
-                        data->estimatedRemainingSeconds = (u32)((data->currTotal - data->currProcessed) / (data->currProcessed / ((
-                              time - ioStartTime) / 1000.0f)));
-
-                     else
-                        data->estimatedRemainingSeconds = 0;
-
-                     if (ioStartTime == 0 && data->currProcessed > 0)
-                        ioStartTime = time;
-
-                     bytesSinceUpdate = 0;
-                     lastBytesPerSecondUpdate = time;
-                  }
-                  printf("%llu/%llu %.2fKBytes/s (%s)\r", data->currProcessed, data->currTotal, data->copyBytesPerSecond / 1024.0f,
-                         data->estimatedRemainingSeconds);
+                  printf("%llu/%llu\r", data->currProcessed, data->currTotal);
 
                }
+
                printf("\n");
 
                if (dstHandle != 0)
